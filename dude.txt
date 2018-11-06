@@ -1,12 +1,6 @@
 Hello mine dudes :)
 
-A BALLOON PAYLOAD STABILIZER WITH PLENTY OF MECHANICAL ASSEMBLY. 
-
-METAL BOX.
-
-MAGNETOMETER.
-
-FINS.
-
-RICHARD EASON.
-
+1) Detect motion with ultra-sonic sensor
+2) Rasp-pi takes photo
+3) uploads to webpage
+3a) maybe even get video to work
