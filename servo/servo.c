@@ -9,7 +9,7 @@ int main(void) {
 	// - Edit /boot/config.txt and add: "dtoverllay=pwm"
 	// - Reboot
 
-	int pwm_file = open("/sys/class/pwm/pwmchip0", O_WRONLY);
+	int pwm_file = open("/sys/class/pwm/pwmchip0/export", O_WRONLY);
 	if (pwm_file < 0) {
 		fprintf(stderr, "Error opening export file.\n");
 		close(pwm_file);
@@ -17,6 +17,7 @@ int main(void) {
 	}
 
 	write(pwm_file, "0", 1);
+	printf("Export write status: %d\n", pwm_file);
 	close(pwm_file);
 
 	pwm_file = open("/sys/class/pwm/pwmchip0/pwm0/duty_cycle", O_WRONLY);
@@ -27,6 +28,10 @@ int main(void) {
         }
 	
 	// Write an arbitrary value to the duty cycle file for testing.
-	write(pwm_file, "3", 1);
+	// ####################################################
+	// Bug here! I can't write to any pwm file, even as root.
+	// ####################################################
+	int x = write(pwm_file, "3", 1);
+	printf("Duty cycle write status: %d\n", x);
 	close(pwm_file);
 }
