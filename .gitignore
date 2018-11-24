@@ -6,3 +6,4 @@
 !*.ino
 !Makefile
 !.gitignore
+!*.txt
