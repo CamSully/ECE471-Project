@@ -20,6 +20,17 @@ int main(void) {
 	printf("Export write status: %d\n", pwm_file);
 	close(pwm_file);
 
+	pwm_file = open("/sys/class/pwm/pwmchip0/pwm0/period", O_WRONLY);
+	if (pwm_file < 0) {
+		fprintf(stderr, "Error opening period file.\n");
+		close(pwm_file);
+		return 0;
+	}
+
+	write(pwm_file, "100", 3);
+	printf("Period  write status: %d\n", pwm_file);
+	close(pwm_file);
+
 	pwm_file = open("/sys/class/pwm/pwmchip0/pwm0/duty_cycle", O_WRONLY);
 	if (pwm_file < 0) {
                 fprintf(stderr, "Error opening duty cycle file.\n");
@@ -31,7 +42,7 @@ int main(void) {
 	// ####################################################
 	// Bug here! I can't write to any pwm file, even as root.
 	// ####################################################
-	int x = write(pwm_file, "3", 1);
+	int x = write(pwm_file, "50", 2);
 	printf("Duty cycle write status: %d\n", x);
 	close(pwm_file);
 }
