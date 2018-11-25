@@ -32,49 +32,16 @@ int main(void) {
 	printf("Period write status: %d\n", pwm_file);
 	close(pwm_file);
 
-	//		  -90	     0	        90
-	char* angle[] = {"1000000", "1500000", "2000000"};
-
-while (1) {
-for (int i = 0; i < 3; i++) {
-	// Disable 
-	pwm_file = open("/sys/class/pwm/pwmchip0/pwm0/enable", O_WRONLY);
-	if (pwm_file < 0) {
-                fprintf(stderr, "Error opening enable file.\n");
-                close(pwm_file);
-                return 0;
-        }
-	pwm_file = write(pwm_file, "0", 1);
-	printf("Enable write status: %d\n", pwm_file);
-	close(pwm_file);
-	
-	usleep(10000);
-
-	// Set DUTY CYCLE (angle)
+	// Set DUTY CYCLE
 	pwm_file = open("/sys/class/pwm/pwmchip0/pwm0/duty_cycle", O_WRONLY);
 	if (pwm_file < 0) {
                 fprintf(stderr, "Error opening duty cycle file.\n");
                 close(pwm_file);
                 return 0;
         }
-	pwm_file = write(pwm_file, angle, 7);
+	// Datasheet spec: pw = ~2 ms for 90 degrees.
+	pwm_file = write(pwm_file, "2500000", 7);
 	printf("Duty cycle write status: %d\n", pwm_file);
 	close(pwm_file);
 
-	usleep(10000);	
-
-	// Enable 
-	pwm_file = open("/sys/class/pwm/pwmchip0/pwm0/enable", O_WRONLY);
-	if (pwm_file < 0) {
-                fprintf(stderr, "Error opening enable file.\n");
-                close(pwm_file);
-                return 0;
-        }
-	pwm_file = write(pwm_file, "1", 1);
-	printf("Enable write status: %d\n", pwm_file);
-	close(pwm_file);
-	
-	usleep(500000);
-}
-}
 }
