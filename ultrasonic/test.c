@@ -21,15 +21,15 @@ int main(int argc, char **argv) {
 	while(1){
 		// Distance of left ultrasonic sensor
 		distanceLeft = getDistance(0);
-		printf("Distance from left sensor",distanceLeft);
+		printf("Distance from left sensor: %lf \n", distanceLeft);
 
 		// Distance of right ultrasonic sensor
 		distanceRight = getDistance(1);
-		printf("Distance from right sensor",distanceRight);
+		printf("Distance from right sensor: %lf \n", distanceRight);
 
 		// Distance of center ultrasonic sensor
-		distanceRight = getDistance(2);
-		printf("Distance from center sensor",distanceCenter);
+		distanceCenter = getDistance(2);
+		printf("Distance from center sensor: %lf \n\n", distanceCenter);
 
 		// Wait 1 second
 		usleep(1000000);
@@ -48,10 +48,13 @@ double getDistance(int channel){
 
 	/* Open SPI device */
 	spi_fd=open("/dev/spidev0.0",O_RDWR);
+	// ##################################
+	// Add error checking here.
+	// ##################################
 
-	/* Set SPI Mode_0 */
+
+	// Set SPI Mode_0
 	result = ioctl(spi_fd,SPI_IOC_WR_MODE,&mode);
-
 	if(result < 0){
 		printf("Error setting SPI Mode_0");
 	}
@@ -59,7 +62,14 @@ double getDistance(int channel){
 	// First byte is start bit at 0x00000001
 	// Second byte has first 4 bits being single/diff followed by 3 bits of channel you want
 	// Third byte is all 0's for padding
-	unsigned char data_out[LENGTH]={0x1,channel,0x0};
+
+	// ##################################
+	// Issue here: need to set single-ended mode. 
+	// ##################################
+	// Bad code
+//	unsigned char data_out[LENGTH]={0x1, channel, 0x0};	
+	// Good code: 0x80 is single-ended mode, OR single-ended mode with the channel left-shift 4 to obtain the data output byte.
+	unsigned char data_out[LENGTH]={0x1, (0x80 | (channel << 4)), 0x0};
 	unsigned char data_in[LENGTH];
 
 	// Clear out transmit buffer with zeros
@@ -67,7 +77,6 @@ double getDistance(int channel){
 
 	// Length set to 3
 	spi.len			= LENGTH;
-	// Delay
 	spi.delay_usecs		= 0;
 	// Clock speed set to 100kHz
 	spi.speed_hz		= 100000;
@@ -91,11 +100,11 @@ double getDistance(int channel){
 	value = ((data_in[1] & 0x03) << 8) | data_in[2];
 
 	// Output voltage as calculated using datasheet equation V_IN = (value * V_REF)/1024
-	vin = ((float)value*3.3)/1024;
+	vin = ((float)value * 3.3) / 1024;
 
 	// Analog output of ultrasonic sensor: (Vcc/512)/inches
 	// Distance: distance = (Vin*512)/Vcc
-	distance = (vin*512)/3.3;
+	distance = (vin * 512) / 3.3;
 
 	return distance;
 }

@@ -19,22 +19,28 @@ int main(int argc, char **argv) {
 	struct spi_ioc_transfer spi;
 	double vin;
 
-	/* Open SPI device */
+	// Open SPI device
 	spi_fd=open("/dev/spidev0.0",O_RDWR);
+	// ##########################
+	// ADD ERROR CHECKING HERE
+	// ##########################
 
-	/* Set SPI Mode_0 */
+
+	// Set SPI Mode_0
 	result = ioctl(spi_fd,SPI_IOC_WR_MODE,&mode);
-
-	if(result < 0){
+	if (result < 0) {
 		printf("Error setting SPI Mode_0");
 	}
 
-	/* Loop forever printing the CH0 and CH1 Voltages 	*/
-	/* Once per second.					*/
+	// Loop forever printing the CH0 and CH1 Voltages
+	// Once per second.
 
 	// First byte is start bit at 0x00000001
 	// Second byte has first 4 bits being single/diff followed by 3 bits of channel you want
 	// Third byte is all 0's for padding
+	// ##########################
+	// Change control bit selection --> single-ended 
+	// ##########################
 	unsigned char data_out[LENGTH]={0x1,0x0,0x0};
 	unsigned char data_in[LENGTH];
 	while(1){
@@ -42,23 +48,27 @@ int main(int argc, char **argv) {
 		// Wait 1 second
 		usleep(1000000);
 
-	// Channel 0
+
+
+		// Channel 0
 
 		// Clear out transmit buffer with zeros
 		memset(&spi,0,sizeof(struct spi_ioc_transfer));
 
-		// Length set to 3
-		spi.len			= LENGTH;
-		// Delay
+		spi.len			= LENGTH; // Length set to 3
 		spi.delay_usecs		= 0;
-		// Clock speed set to 100kHz
-		spi.speed_hz		= 100000;
-		// Bits per word set to 8 bits
-		spi.bits_per_word	= 8;
+		spi.speed_hz		= 100000; // Clock speed set to 100kHz
+		spi.bits_per_word	= 8; // Bits per word set to 8 bits
 		spi.cs_change		= 0;
 
 		// Reset data_out back to Channel 0
-		data_out[1] = 0x0;
+		// ##########################
+		// THIS IS WHERE THE PROBLEM WAS. 
+		// ##########################
+		// Bad code: you must enable single-ended mode!
+//		data_out[1] = 0x0;
+		// Good code: single-ended mode is enabled.
+		data_out[1] = 0b10000000;
 
 		// Transmit three bytes and recieve for Channel 0 data
 		spi.tx_buf	= (unsigned long)&data_out;
@@ -80,12 +90,13 @@ int main(int argc, char **argv) {
 		value = ((data_in[1] & 0x03) << 8) | data_in[2];
 
 		// Output voltage as calculated using datasheet equation V_IN = (value * V_REF)/1024
-		vin = ((float)value*3.3)/1024;
+		vin = ((float)value * 3.3) / 1024;
 		printf("Channel 0 Raw Value: %d\n",value);
 		printf("Channel 0 Voltage: %lf\n",vin);
 
 
-	// Channel 1
+
+		// Channel 1
 
 		// Clear out transmit buffer with zeros
 		memset(&spi,0,sizeof(struct spi_ioc_transfer));
@@ -101,7 +112,13 @@ int main(int argc, char **argv) {
 		spi.cs_change		= 0;
 
 		// Set Output to Channel 1
-		data_out[1] = 0x10;
+		// ##########################
+		// THIS IS WHERE THE PROBLEM WAS. 
+		// ##########################
+		// Bad code
+//		data_out[1] = 0x10;
+		// Good code
+		data_out[1] = 0b10010000;
 
 		// Transmit three bytes and recieve for Channel 0 data
 		spi.tx_buf	= (unsigned long)&data_out;
@@ -126,7 +143,9 @@ int main(int argc, char **argv) {
 		printf("Channel 1 Raw Value: %d\n",value);
 		printf("Channel 1 Value: %lf\n",vin);
 
-	// Channel 2
+
+
+		// Channel 2
 
 		// Clear out transmit buffer with zeros
 		memset(&spi,0,sizeof(struct spi_ioc_transfer));
@@ -142,7 +161,13 @@ int main(int argc, char **argv) {
 		spi.cs_change		= 0;
 
 		// Set Output to Channel 2
-		data_out[1] = 0x11;
+		// ##########################
+		// THIS IS WHERE THE PROBLEM WAS. 
+		// ##########################
+		// Bad code
+//		data_out[1] = 0x11;
+		// Good code
+		data_out[1] = 0b10100000;
 
 		// Transmit three bytes and recieve for Channel 0 data
 		spi.tx_buf	= (unsigned long)&data_out;
@@ -169,7 +194,5 @@ int main(int argc, char **argv) {
 
 
 	}
-	/* Use the SPI_IOC_MESSAGE(1) ioctl() as described in the class notes */
-
 	return 0;
 }

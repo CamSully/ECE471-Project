@@ -1,3 +1,3 @@
-make: 	test_spi.c test_spi2.c
-	gcc test_spi.c -o test
-	gcc test_spi2.c -o test2
+make: 	test_spi.c test.c
+	gcc test_spi.c -o test_spi
+	gcc test.c -o test
