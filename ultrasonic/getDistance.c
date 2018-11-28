@@ -11,173 +11,106 @@
 
 #define LENGTH 3
 
+double getDistance(int channel);
+
 int main(int argc, char **argv) {
+
+	double distanceLeft, distanceRight, distanceCenter;
+
+	// Print out distance measurements from three sensors every second
+	while(1){
+		// Get distance from ultrasonic sensors
+		distanceLeft = getDistance(0);
+		distanceRight = getDistance(1);
+		distanceCenter = getDistance(2);
+
+		// An error occurred if getDistance() returns 7879
+		if((distanceLeft || distanceRight || distanceCenter) == 7879){
+			return 0;
+		}
+
+		// Print distances from each sensor
+		printf("Distance from left sensor: %lf \n", distanceLeft);
+		printf("Distance from right sensor: %lf \n", distanceRight);
+		printf("Distance from center sensor: %lf \n\n", distanceCenter);
+
+		// Wait 1 second
+		usleep(1000000);
+	}
+
+	return 0;
+}
+
+double getDistance(int channel){
 
         int spi_fd;
 	int result, value;
 	int mode = SPI_MODE_0;
 	struct spi_ioc_transfer spi;
-	double vin, distance;
+	double vm, ri, vi;
 
-	/* Open SPI device */
+	// Open SPI device
 	spi_fd=open("/dev/spidev0.0",O_RDWR);
-
-	/* Set SPI Mode_0 */
-	result = ioctl(spi_fd,SPI_IOC_WR_MODE,&mode);
-
-	if(result < 0){
-		printf("Error setting SPI Mode_0");
+	if(spi_fd < 0){
+		printf("Error opening SPI device");
+		return 7879;
 	}
 
-	/* Loop forever printing the distances	 	*/
-	/* Once per second.				*/
+	// Set SPI Mode_0
+	result = ioctl(spi_fd,SPI_IOC_WR_MODE,&mode);
+	if(result < 0){
+		printf("Error setting SPI Mode_0");
+		return 7879;
+	}
 
 	// First byte is start bit at 0x00000001
 	// Second byte has first 4 bits being single/diff followed by 3 bits of channel you want
 	// Third byte is all 0's for padding
-	unsigned char data_out[LENGTH]={0x1,0x0,0x0};
+
+	// Second byte: 0x80 is single-ended mode, OR single-ended mode with the channel left-shift 4 to obtain the data output byte.
+	unsigned char data_out[LENGTH]={0x1, (0x80 | (channel << 4)), 0x0};
 	unsigned char data_in[LENGTH];
-	while(1){
 
-		// Wait 1 second
-		usleep(1000000);
+	// Clear out transmit buffer with zeros
+	memset(&spi,0,sizeof(struct spi_ioc_transfer));
 
+	// Length set to 3
+	spi.len			= LENGTH;
+	spi.delay_usecs		= 0;
+	// Clock speed set to 100kHz
+	spi.speed_hz		= 100000;
+	// Bits per word set to 8 bits
+	spi.bits_per_word	= 8;
+	spi.cs_change		= 0;
 
-		/* 		Channel 0 		*/
+	// Transmit three bytes and recieve for Channel 0 data
+	spi.tx_buf	= (unsigned long)&data_out;
+	spi.rx_buf	= (unsigned long)&data_in;
 
-		// Clear out transmit buffer with zeros
-		memset(&spi,0,sizeof(struct spi_ioc_transfer));
+	// Run one full-duplex transaction
+	result = ioctl(spi_fd, SPI_IOC_MESSAGE(1), &spi);
 
-		// Length set to 3
-		spi.len			= LENGTH;
-		// Delay
-		spi.delay_usecs		= 0;
-		// Clock speed set to 100kHz
-		spi.speed_hz		= 100000;
-		// Bits per word set to 8 bits
-		spi.bits_per_word	= 8;
-		spi.cs_change		= 0;
-
-		// Reset data_out back to Channel 0
-		data_out[1] = 0x0;
-
-		// Transmit three bytes and recieve for Channel 0 data
-		spi.tx_buf	= (unsigned long)&data_out;
-		spi.rx_buf	= (unsigned long)&data_in;
-
-		// Run one full-duplex transaction
-		result = ioctl(spi_fd, SPI_IOC_MESSAGE(1), &spi);
-
-		// Check for error
-		if(result < 0){
-			printf("Error running full-duplex transaction");
-		}
-
-		// Value of the output voltage is from the first two bits in the second byte and all of the third byte
-		value = ((data_in[1] & 0x03) << 8) | data_in[2];
-
-		// Output voltage as calculated using datasheet equation V_IN = (value * V_REF)/1024
-		vin = ((float)value*3.3)/1024;
-		printf("Channel 0 Raw Value: %d\n",value);
-		printf("Channel 0 Voltage: %lf\n",vin);
-
-		// Analog output of ultrasonic sensor: (Vcc/512)/inches
-		// Distance: distance = (Vin*512)/Vcc
-		distance = (vin*512)/3.3;
-		printf("Ultrasonic sensor 1 distance: %lf\n",distance);
-
-
-		/* 		Channel 1 		*/
-
-		// Clear out transmit buffer with zeros
-		memset(&spi,0,sizeof(struct spi_ioc_transfer));
-
-		// Length set to 3
-		spi.len			= LENGTH;
-		// Delay
-		spi.delay_usecs		= 0;
-		// Clock speed set to 100kHz
-		spi.speed_hz		= 100000;
-		// Bits per word set to 8 bits
-		spi.bits_per_word	= 8;
-		spi.cs_change		= 0;
-
-		// Set Output to Channel 1
-		data_out[1] = 0x10;
-
-		// Transmit three bytes and recieve for Channel 0 data
-		spi.tx_buf	= (unsigned long)&data_out;
-		spi.rx_buf	= (unsigned long)&data_in;
-
-		// Run one full-duplex transaction
-		result = ioctl(spi_fd, SPI_IOC_MESSAGE(1), &spi);
-
-		// Check for error
-		if(result < 0){
-			printf("Error running full-duplex transaction");
-		}
-
-		// Print values of the bytes output by Channel 1
-		//printf("Byte 1: %d\nByte 2: %d\nByte 3:%d\n\n",data_in[0],data_in[1],data_in[2]);
-
-		// Value of the output voltage is from the first two bits in the second byte and all of the third byte
-		value = ((data_in[1] & 0x03) << 8) | data_in[2];
-
-		// Output voltage as calculated using datasheet equation V_IN = (value * V_REF)/1024
-		vin = ((float)value*3.3)/1024;
-		printf("Channel 1 Raw Value: %d\n",value);
-		printf("Channel 1 Value: %lf\n",vin);
-
-		// Analog output of ultrasonic sensor: (Vcc/512)/inches
-		// Distance: distance = (Vin*512)/Vcc
-		distance = (vin*512)/3.3;
-		printf("Ultrasonic sensor 2 distance: %lf\n",distance);
-
-		/* 		Channel 2 		*/
-
-		// Clear out transmit buffer with zeros
-		memset(&spi,0,sizeof(struct spi_ioc_transfer));
-
-		// Length set to 3
-		spi.len			= LENGTH;
-		// Delay
-		spi.delay_usecs		= 0;
-		// Clock speed set to 100kHz
-		spi.speed_hz		= 100000;
-		// Bits per word set to 8 bits
-		spi.bits_per_word	= 8;
-		spi.cs_change		= 0;
-
-		// Set Output to Channel 2
-		data_out[1] = 0x11;
-
-		// Transmit three bytes and recieve for Channel 0 data
-		spi.tx_buf	= (unsigned long)&data_out;
-		spi.rx_buf	= (unsigned long)&data_in;
-
-		// Run one full-duplex transaction
-		result = ioctl(spi_fd, SPI_IOC_MESSAGE(1), &spi);
-
-		// Check for error
-		if(result < 0){
-			printf("Error running full-duplex transaction");
-		}
-
-		// Print values of the bytes output by Channel 1
-		//printf("Byte 1: %d\nByte 2: %d\nByte 3:%d\n\n",data_in[0],data_in[1],data_in[2]);
-
-		// Value of the output voltage is from the first two bits in the second byte and all of the third byte
-		value = ((data_in[1] & 0x03) << 8) | data_in[2];
-
-		// Output voltage as calculated using datasheet equation V_IN = (value * V_REF)/1024
-		vin = ((float)value*3.3)/1024;
-		printf("Channel 2 Raw Value: %d\n",value);
-		printf("Channel 2 Value: %lf\n",vin);
-
-		// Analog output of ultrasonic sensor: (Vcc/512)/inches
-		// Distance: distance = (Vin*512)/Vcc
-		distance = (vin*512)/3.3;
-		printf("Ultrasonic sensor 3 distance: %lf\n\n",distance);
+	// Check for error
+	if (result < 0) {
+		printf("Error running full-duplex transaction");
+		return 7879;
 	}
-	return 0;
+
+	/*		Calculating Distance		*/
+
+	// Value of the output voltage is from the first two bits in the second byte and all of the third byte
+	value = ((data_in[1] & 0x03) << 8) | data_in[2];
+
+	// Measured voltage as calculated using MCP3008 datasheet equation Vm = (value * V_REF)/1024
+	vm = ((float)value * 3.3) / 1024;
+
+	// Analog output of ultrasonic sensor
+	// Vi is volts per inch
+	// Vi = Vcc(V)/512(inch)
+	vi = 5.0 / 512.0;
+
+	// Ri is range in inches
+	ri = vm / vi;
+
+	return ri;
 }
