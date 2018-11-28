@@ -22,16 +22,16 @@ int main(int argc, char **argv) {
 	}
 
 	int angle = atoi(argv[1]);
-	printf("Angle: %d", angle);
+	printf("Angle: %d\n", angle);
 	rotateServo(angle);
 
 // This loop is for testing code! Replace when finalized.
 /* while (1) {
-	rotateServo(-90);
-	sleep(1);
 	rotateServo(0);
 	sleep(1);
 	rotateServo(90);
+	sleep(1);
+	rotateServo(180);
 	sleep(1);
 } */
 	return 0;
@@ -76,13 +76,13 @@ int rotateServo(int angle) {
 	// Calibrate these values!
 	// Idea: use linear regresssion to allow for any angle?
 	if (angle == 0) {
-		pulseWidth = "1000000"; 
+		pulseWidth = "2500000"; 
 	}
 	if (angle == 90) {
 		pulseWidth = "1500000";
 	}
 	if (angle == 180) {
-		pulseWidth = "2000000";
+		pulseWidth = "700000";
 	}
 
 	// Disable the PWM0 interface to allow for a config change.
@@ -106,7 +106,12 @@ int rotateServo(int angle) {
                 close(pwm_file);
                 return 0;
         }
-	pwm_file = write(pwm_file, pulseWidth, 7);
+	if (angle == 180) {
+		pwm_file = write(pwm_file, pulseWidth, 6);
+	}
+	else {
+		pwm_file = write(pwm_file, pulseWidth, 7);
+	}
 	printf("Duty cycle write status: %d\n", pwm_file);
 	close(pwm_file);
 

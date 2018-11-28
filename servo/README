@@ -12,3 +12,8 @@ Code file descriptions:
 - servo.c - This is the main servo code that is executed by the master python script.
 - servo.py - This is some backup servo code used to test its functionality.
 - servo0.c, servo90.c, servoNeg90.c - These files are used to manually test the Pi's rotation angles.
+
+Todo:
+- Add complete error checking.
+- Finalize angle tuning in servo.c.
+- Clean code, comment.

@@ -2,7 +2,7 @@ CC = gcc
 CFLAGS = -O2 -Wall
 LFLAGS = 
 
-all: servo servo0 servoNeg90 servo90
+all: servo servo0 servo90 servo180
 
 servo0: servo0.o
 	$(CC) $(LFLAGS) -o servo0 servo0.o
@@ -10,11 +10,11 @@ servo0: servo0.o
 servo0.o: servo0.c
 	$(CC) $(CFLAGS) -c servo0.c
 
-servoNeg90: servoNeg90.o
-	$(CC) $(LFLAGS) -o servoNeg90 servoNeg90.o
+servo180: servo180.o
+	$(CC) $(LFLAGS) -o servo180 servo180.o
 
-servoNeg90.o: servoNeg90.c
-	$(CC) $(CFLAGS) -c servoNeg90.c
+servo180.o: servo180.c
+	$(CC) $(CFLAGS) -c servo180.c
 
 servo90: servo90.o
 	$(CC) $(LFLAGS) -o servo90 servo90.o
