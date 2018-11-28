@@ -1,0 +1,14 @@
+## Servo Code
+
+This code operates the Towerpro SG90 servo motor using the Raspberry Pi GPIO.
+
+Prerequisites:
+1. Edit /boot/config.txt: add "dtoverllay=pwm"
+2. Reboot
+3. Connect servo motor to the Raspberry Pi GPIO.
+4. Run one of the servo C code executables.
+
+Code file descriptions:
+- servo.c - This is the main servo code that is executed by the master python script.
+- servo.py - This is some backup servo code used to test its functionality.
+- servo0.c, servo90.c, servoNeg90.c - These files are used to manually test the Pi's rotation angles.
