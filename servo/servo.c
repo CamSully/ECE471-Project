@@ -4,6 +4,7 @@
 */
 
 #include <stdio.h>
+#include <stdlib.h>	// atoi
 #include <fcntl.h>
 #include <unistd.h>
 
@@ -27,11 +28,11 @@ int main(int argc, char **argv) {
 // This loop is for testing code! Replace when finalized.
 /* while (1) {
 	rotateServo(-90);
-	delay(1);
+	sleep(1);
 	rotateServo(0);
-	delay(1);
+	sleep(1);
 	rotateServo(90);
-	delay(1);
+	sleep(1);
 } */
 	return 0;
 }
@@ -85,7 +86,7 @@ int rotateServo(int angle) {
 	}
 
 	// Disable the PWM0 interface to allow for a config change.
-	pwm_file = open("/sys/class/pwm/pwmchip0/pwm0/enable", O_WRONLY);
+	int pwm_file = open("/sys/class/pwm/pwmchip0/pwm0/enable", O_WRONLY);
 	if (pwm_file < 0) {
                 fprintf(stderr, "Error opening enable file.\n");
                 close(pwm_file);

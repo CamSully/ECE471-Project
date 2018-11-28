@@ -5,10 +5,6 @@
 #include <unistd.h>
 
 int main(void) {
-	// Prerequisites:
-	// - Edit /boot/config.txt and add: "dtoverllay=pwm"
-	// - Reboot
-
 	int pwm_file = open("/sys/class/pwm/pwmchip0/export", O_WRONLY);
 	if (pwm_file < 0) {
 		fprintf(stderr, "Error opening export file.\n");
@@ -40,8 +36,32 @@ int main(void) {
                 return 0;
         }
 	// Datasheet spec: pw = ~2 ms for 90 degrees.
-	pwm_file = write(pwm_file, "2500000", 7);
+	pwm_file = write(pwm_file, "2750000", 7);
 	printf("Duty cycle write status: %d\n", pwm_file);
 	close(pwm_file);
 
+	// Enable.
+        pwm_file = open("/sys/class/pwm/pwmchip0/pwm0/enable", O_WRONLY);
+        if (pwm_file < 0) {
+                fprintf(stderr, "Error opening enable file.\n");
+                close(pwm_file);
+                return 0;
+        }
+        pwm_file = write(pwm_file, "1", 1);
+        printf("Enable write status: %d\n", pwm_file);
+        close(pwm_file);
+
+        // Delay to allow for rotation before disable.
+        usleep(1000000);
+
+        // Disable. 
+        pwm_file = open("/sys/class/pwm/pwmchip0/pwm0/enable", O_WRONLY);
+        if (pwm_file < 0) {
+                fprintf(stderr, "Error opening enable file.\n");
+                close(pwm_file);
+                return 0;
+        }
+        pwm_file = write(pwm_file, "0", 1);
+        printf("Enable write status: %d\n", pwm_file);
+        close(pwm_file);
 }

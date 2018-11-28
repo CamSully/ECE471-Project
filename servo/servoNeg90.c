@@ -40,7 +40,33 @@ int main(void) {
                 return 0;
         }
 	// Datasheet: pw = 1 ms for -90 degrees.
-	pwm_file = write(pwm_file, "1000000", 7);
+	pwm_file = write(pwm_file, "650000", 6);
 	printf("Duty cycle write status: %d\n", pwm_file);
 	close(pwm_file);
+	
+	// Enable.
+	pwm_file = open("/sys/class/pwm/pwmchip0/pwm0/enable", O_WRONLY);
+        if (pwm_file < 0) {
+                fprintf(stderr, "Error opening enable file.\n");
+                close(pwm_file);
+                return 0;
+        }
+        pwm_file = write(pwm_file, "1", 1);
+        printf("Enable write status: %d\n", pwm_file);
+        close(pwm_file);
+
+	// Delay to allow for rotation before disable.
+	usleep(1000000);
+
+	// Disable. 
+	pwm_file = open("/sys/class/pwm/pwmchip0/pwm0/enable", O_WRONLY);
+        if (pwm_file < 0) {
+                fprintf(stderr, "Error opening enable file.\n");
+                close(pwm_file);
+                return 0;
+        }
+        pwm_file = write(pwm_file, "0", 1);
+        printf("Enable write status: %d\n", pwm_file);
+        close(pwm_file);
+	
 }
