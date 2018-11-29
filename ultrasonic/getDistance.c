@@ -35,6 +35,7 @@ int main(int argc, char **argv) {
 		printf("Distance from center sensor: %lf \n\n", distanceCenter);
 
 		// Wait 1 second
+		// DECREASE THIS! Minimum sample rate: 50 ms
 		usleep(1000000);
 	}
 
@@ -111,6 +112,8 @@ double getDistance(int channel){
 
 	// Ri is range in inches
 	ri = vm / vi;
+
+	// CLOSE SPI FILE BEFORE RETURNING!
 
 	return ri;
 }
