@@ -17,7 +17,7 @@ int main(int argc, char **argv) {
 
 	double distanceLeft, distanceRight, distanceCenter;
 
-	// Print out distance measurements from three sensors every second
+	// Print out distance measurements from three sensors every 100ms
 	while(1){
 		// Get distance from ultrasonic sensors
 		distanceLeft = getDistance(0);
@@ -35,10 +35,10 @@ int main(int argc, char **argv) {
 		printf("Distance from center sensor: %lf \n\n", distanceCenter);
 
 		// Wait 1 second
-		// DECREASE THIS! Minimum sample rate: 50 ms
-		usleep(1000000);
+		// Minimum sample rate: 50 ms
+		// Displays distance every 100ms
+		usleep(100000);
 	}
-
 	return 0;
 }
 
@@ -61,6 +61,7 @@ double getDistance(int channel){
 	result = ioctl(spi_fd,SPI_IOC_WR_MODE,&mode);
 	if(result < 0){
 		printf("Error setting SPI Mode_0");
+		close(spi_fd);
 		return 7879;
 	}
 
@@ -94,6 +95,7 @@ double getDistance(int channel){
 	// Check for error
 	if (result < 0) {
 		printf("Error running full-duplex transaction");
+		close(spi_fd);
 		return 7879;
 	}
 
@@ -113,7 +115,8 @@ double getDistance(int channel){
 	// Ri is range in inches
 	ri = vm / vi;
 
-	// CLOSE SPI FILE BEFORE RETURNING!
+	// Close file descriptor
+	close(spi_fd);
 
 	return ri;
 }
