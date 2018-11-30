@@ -41,7 +41,8 @@ def main():
 	
 		# Open file containing what sensor detected a person
 		detected = open("filename.txt", "r")
-
+		
+		# Busy loop to wait until someone is detected
 		while(int(detected.read()) == -1):
 			print("No one Detected\n")
 
