@@ -10,16 +10,29 @@
 #include <linux/spi/spidev.h>
 
 #define LENGTH 3
+#define CONSECUTIVE_SAMPLES_LIMIT 5 
+
 
 double getDistance(int channel);
+void getBaseline();
+void getNoise();
+
+
+double leftBaseline, rightBaseline, centerBaseline;
+double leftNoise, rightNoise, centerNoise;
 
 int main(int argc, char **argv) {
 
 	double distanceLeft, distanceRight, distanceCenter;
+	int fd_detection;	
+
+	getBaseline();
+	getNoise();
 
 	// Print out distance measurements from three sensors every 100ms
 	while(1){
-		// Get distance from ultrasonic sensors
+
+		// Get distance from ultrasonic sensors	
 		distanceLeft = getDistance(0);
 		distanceRight = getDistance(1);
 		distanceCenter = getDistance(2);
@@ -28,16 +41,56 @@ int main(int argc, char **argv) {
 		if((distanceLeft || distanceRight || distanceCenter) == 7879){
 			return 0;
 		}
-
+		
 		// Print distances from each sensor
 		printf("Distance from left sensor: %lf \n", distanceLeft);
 		printf("Distance from right sensor: %lf \n", distanceRight);
 		printf("Distance from center sensor: %lf \n\n", distanceCenter);
 
+
+
+		if(distanceLeft < (leftBaseline - leftNoise)) leftCounter++;
+		else leftCounter = 0;
+		if(distanceRight < (rightBaseline - rightNoise)) rightCounter++;
+		else rightCounter = 0;
+		if(distanceCenter < (centerBaseline - centerNoise)) centerCounter++;
+		else centerCounter = 0;
+		
+
+		if(leftCounter >= CONSECUTIVE_SAMPLES_LIMIT) {
+ 			
+			fd_detection = open("/home/pi/ECE471_Project/detection.txt", O_WRONLY);
+			write(fd_detection, "left", 4);
+			close(fd_detection);
+
+		}
+
+		if(rightCounter >= CONSECUTIVE_SAMPLES_LIMIT) {
+			
+			fd_detection = open("/home/pi/ECE471_Project/detection.txt", O_WRONLY);
+			write(fd_detection, "right", 5);
+			close(fd_detection);
+		}
+
+		if(centerCounter >= CONSECUTIVE_SAMPLES_LIMIT) {
+
+			fd_detection = open("/home/pi/ECE471_Project/detection.txt", O_WRONLY);\
+			write(fd_detection, "center", 6);
+			close(fd_detection);
+		}
+
+		if((leftCounter < CONSECUTIVE_SAMPLES_LIMIT) && (rightCounter < CONSECUTIVE_SAMPLES_LIMIT) && (centerCounter < CONSECUTIVE_SAMPLES_LIMIT)) {
+			
+			fd_detection = open("/home/pi/ECE471_Project/detection.txt", O_WRONLY);\
+			write(fd_detection, "0", 1);
+			close(fd_detection);
+		}
+			 
+
 		// Wait 1 second
 		// Minimum sample rate: 50 ms
 		// Displays distance every 100ms
-		usleep(100000);
+		usleep(50000);
 	}
 	return 0;
 }
@@ -120,3 +173,52 @@ double getDistance(int channel){
 
 	return ri;
 }
+
+void getBaseline() {
+
+	double distanceLeft, distanceRight, distanceCenter;
+	double leftTotal, rightTotal, centerTotal;
+	int i;	
+
+	for(i = 0; i < 500; i++){
+		distanceLeft = getDistance(0);
+		distanceRight = getDistance(1);
+		distanceCenter = getDistance(2);
+
+		leftTotal += distanceLeft;
+		rightTotal += distanceRight;
+		centerTotal += distanceCenter;		
+
+		usleep(50000);
+	}
+
+	leftBaseline = leftTotal / 500.0;
+	rightBaseline = rightTotal / 500.0;
+	centerBaseline = centerTotal / 500.0;
+	
+}
+
+void getNoise() {
+	
+	double distanceLeft, distanceRight, distanceCenter;
+	double leftTotal, rightTotal, centerTotal;
+	int i;	
+
+	for(i = 0; i < 500; i++){
+		distanceLeft = getDistance(0);
+		distanceRight = getDistance(1);
+		distanceCenter = getDistance(2);
+
+		leftTotal += abs(leftBaseline - distanceLeft);
+		rightTotal += abs(rightBaseline - distanceRight);
+		centerTotal += abs(centerBaseline - distanceCenter);		
+
+		usleep(50000);
+	}
+
+	leftNoise = leftTotal / 500.0;
+	rightNoise = rightTotal / 500.0;
+	centerNoise = centerTotal / 500.0;
+
+}
+

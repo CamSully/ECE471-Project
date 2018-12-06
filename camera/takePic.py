@@ -7,7 +7,8 @@
 from picamera import PiCamera
 import time
 
-camera = PiCamera()   
+camera = PiCamera() 
+camera.vflip = True  
 camera.start_preview()		# Turn on Camera and preview
 time.sleep(5)			# Wait 5 seconds to focus
 camera.capture('/home/pi/Documents/git-collab/ECE471-Project/camera/pics/test.jpg')	# Where to save pics
