@@ -9,6 +9,7 @@ from picamera import PiCamera
 from time import sleep
 from subprocess import call
 import os.path
+from flask import Flask, render_template
 
 
 def takePic():
@@ -31,10 +32,28 @@ def takePic():
 	return
 
 
+def webServer():
+
+	app = Flask(__name__)
+
+	@app.route('/')
+
+	def index():
+
+		return render_template('index.html')
+
+	
+	app.run(debug = True, host = 0.0.0.0)	
+	
+	return
+	
 def main():
 	
+	# Start the web server
+	webServer()
+
 	# Start the ultrasonic sensors
-	call(["sudo", "ultrasonic/distance"])
+	call(["sudo", "ultrasonic/distance"]
 
 	# Infinite loop to detect a person and take a picture of them
 	while(1):
@@ -49,17 +68,17 @@ def main():
 		# If the value in the file is 0, move camera to left sensor
 		if(int(detected.read()) == 0):
 		
-			call(["sudo", "servo/servo 90"])
+			call(["sudo", "servo/servo", "90"])
 
 		# If the value in the file is 1, move camera to middle sensor
 		if(int(detected.read()) == 1):
 	
-			call(["sudo", "servo/servo 0"])		
+			call(["sudo", "servo/servo", "0"])		
 
 		# If the value in the file is 2, move camera to right sensor
 		if(int(detected.read()) == 2):	  
 
-			call(["sudo", "servo/servo 180"])
+			call(["sudo", "servo/servo", "180"])
 
 		# Once camera is in the correct position, take a picture
 		takePic()
@@ -69,5 +88,8 @@ def main():
 	
 	return
 
-# Call the main function		
-main()
+# Call the main function
+if __name__ == "__main__":
+	main()
+
+
