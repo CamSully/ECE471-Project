@@ -74,15 +74,14 @@ int rotateServo(int angle) {
 	char* pulseWidth;
 
 	// Calibrate these values!
-	// Idea: use linear regresssion to allow for any angle?
 	if (angle == 0) {
-		pulseWidth = "2500000"; 
+		pulseWidth = "2220000"; 
 	}
 	if (angle == 90) {
-		pulseWidth = "1500000";
+		pulseWidth = "1350000";
 	}
 	if (angle == 180) {
-		pulseWidth = "700000";
+		pulseWidth = "530000";
 	}
 
 	// Disable the PWM0 interface to allow for a config change.
