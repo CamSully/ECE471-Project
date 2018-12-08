@@ -10,7 +10,7 @@
 #include <linux/spi/spidev.h>
 
 #define LENGTH 3
-#define CONSECUTIVE_SAMPLES_LIMIT 10 
+#define CONSECUTIVE_SAMPLES_LIMIT 10
 
 
 double getDistance(int channel);
@@ -25,8 +25,44 @@ int main(int argc, char **argv) {
 
 	double distanceLeft, distanceRight, distanceCenter;
 	int fd_detection;
-	int leftCounter, rightCounter, centerCounter;	
+	int leftCounter, rightCounter, centerCounter;
+
+	// Delay for LV-EZ0 start-up
+	usleep(1000000);
+
+	// Start chain 
+	int gpio_file = open("/sys/class/gpio/export",O_WRONLY);
+	//error check
+
+	// Enable GPIO 21
+	write(gpio_file,"21",2);
+	close(gpio_file);
 	
+	// Set direction to output
+	gpio_file = open("/sys/class/gpio/gpio21/direction",O_WRONLY);
+	// error check
+
+	// Write output
+	write(gpio_file,"out",3);
+	close(gpio_file);
+
+	// Set GPIO 21 high
+	gpio_file = open("/sys/class/gpio/gpio21/value",O_WRONLY);
+	//error check
+	write(gpio_file,"1",1);
+	close(gpio_file);
+
+	// This delay accounts for the time constant of the input RC circuit. T = 500 us, so 5T = 2.5 ms.
+	// This delay must be greater than 2.5 ms to charge RX pin to full voltage. T = tau.
+	usleep(5000);
+
+	// Set GPIO 21 low
+	gpio_file = open("/sys/class/gpio/gpio21/value",O_WRONLY);
+	//error check
+	write(gpio_file,"0",1);
+	close(gpio_file);
+
+
 	printf("Getting Baseline...\n");
 	getBaseline();
 	printf("Got Baseline, Getting Noise...\n");
@@ -36,18 +72,19 @@ int main(int argc, char **argv) {
 	// Print out distance measurements from three sensors every 100ms
 	while(1){
 
-		// Get distance from ultrasonic sensors	
-		distanceLeft = getDistance(0);
+		// Get distance from ultrasonic sensors
+//		distanceLeft = getDistance(0);
 		distanceRight = getDistance(1);
+
 		distanceCenter = getDistance(2);
 
 		// An error occurred if getDistance() returns 7879
 		if((distanceLeft || distanceRight || distanceCenter) == 7879){
 			return 0;
 		}
-		
+
 		// Print distances from each sensor
-		printf("Distance from left sensor: %lf \n", distanceLeft);
+//		printf("Distance from left sensor: %lf \n", distanceLeft);
 		printf("Distance from right sensor: %lf \n", distanceRight);
 		printf("Distance from center sensor: %lf \n\n", distanceCenter);
 
@@ -59,10 +96,10 @@ int main(int argc, char **argv) {
 		else rightCounter = 0;
 		if(distanceCenter < (centerBaseline - centerNoise)) centerCounter++;
 		else centerCounter = 0;
-		
+
 
 		if(leftCounter >= CONSECUTIVE_SAMPLES_LIMIT) {
- 			
+
 			fd_detection = open("/home/pi/ECE471-Project/detection.txt", O_WRONLY);
 			if(fd_detection < 0) {
 				printf("ERROR OPENING DETECTION FILE DESCRIPTOR!\n");
@@ -75,7 +112,7 @@ int main(int argc, char **argv) {
 		}
 
 		if(rightCounter >= CONSECUTIVE_SAMPLES_LIMIT) {
-			
+
 			fd_detection = open("/home/pi/ECE471-Project/detection.txt", O_WRONLY);
 			if(fd_detection < 0) {
 				printf("ERROR OPENING DETECTION FILE DESCRIPTOR!\n");
@@ -188,7 +225,16 @@ double getDistance(int channel){
 	// Vi is volts per inch
 	// Vi = Vcc(V)/512(inch)
 	vi = 5.0 / 512.0;
-
+/*	if (channel == 0) {
+		printf("Left voltage: %lf\n", vm);
+	}
+	if (channel == 1) {
+		printf("Right voltage; %lf\n", vm);
+	}
+	if (channel == 2) {
+		printf("Center voltage; %lf\n", vm);
+	}
+*/
 	// Ri is range in inches
 	ri = vm / vi;
 
@@ -217,8 +263,11 @@ void getBaseline() {
 	}
 
 	leftBaseline = leftTotal / 100.0;
+	printf("Left baseline: %lf\n", leftBaseline);
 	rightBaseline = rightTotal / 100.0;
+	printf("Right baseline: %lf\n", rightBaseline);
 	centerBaseline = centerTotal / 100.0;
+	printf("Center baseline: %lf\n", centerBaseline);
 	
 }
 
@@ -241,8 +290,11 @@ void getNoise() {
 	}
 
 	leftNoise = leftTotal / 100.0;
+	printf("Left noise: %lf\n", leftNoise);
 	rightNoise = rightTotal / 100.0;
+	printf("Left noise: %lf\n", rightNoise);
 	centerNoise = centerTotal / 100.0;
+	printf("Left noise: %lf\n", centerNoise);
 
 }
 
