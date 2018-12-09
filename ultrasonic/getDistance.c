@@ -16,7 +16,7 @@
 double getDistance(int channel);
 void getBaseline();
 void getNoise();
-
+int initializeChaining();
 
 double leftBaseline, rightBaseline, centerBaseline;
 double leftNoise, rightNoise, centerNoise;
@@ -26,43 +26,19 @@ int main(int argc, char **argv) {
 	double distanceLeft, distanceRight, distanceCenter;
 	int fd_detection;
 	int leftCounter, rightCounter, centerCounter;
-
+	int result;
+		
 	// Delay for LV-EZ0 start-up
 	usleep(1000000);
 
 	// Start chain 
-	int gpio_file = open("/sys/class/gpio/export",O_WRONLY);
-	//error check
-
-	// Enable GPIO 21
-	write(gpio_file,"21",2);
-	close(gpio_file);
+	result = initializeChaining();
 	
-	// Set direction to output
-	gpio_file = open("/sys/class/gpio/gpio21/direction",O_WRONLY);
-	// error check
-
-	// Write output
-	write(gpio_file,"out",3);
-	close(gpio_file);
-
-	// Set GPIO 21 high
-	gpio_file = open("/sys/class/gpio/gpio21/value",O_WRONLY);
-	//error check
-	write(gpio_file,"1",1);
-	close(gpio_file);
-
-	// This delay accounts for the time constant of the input RC circuit. T = 500 us, so 5T = 2.5 ms.
-	// This delay must be greater than 2.5 ms to charge RX pin to full voltage. T = tau.
-	usleep(5000);
-
-	// Set GPIO 21 low
-	gpio_file = open("/sys/class/gpio/gpio21/value",O_WRONLY);
-	//error check
-	write(gpio_file,"0",1);
-	close(gpio_file);
-
-
+	// Error check
+	if (result == 0){
+		return 0;
+	}
+		
 	printf("Getting Baseline...\n");
 	getBaseline();
 	printf("Got Baseline, Getting Noise...\n");
@@ -73,7 +49,7 @@ int main(int argc, char **argv) {
 	while(1){
 
 		// Get distance from ultrasonic sensors
-//		distanceLeft = getDistance(0);
+		distanceLeft = getDistance(0);
 		distanceRight = getDistance(1);
 
 		distanceCenter = getDistance(2);
@@ -84,20 +60,31 @@ int main(int argc, char **argv) {
 		}
 
 		// Print distances from each sensor
-//		printf("Distance from left sensor: %lf \n", distanceLeft);
+		printf("Distance from left sensor: %lf \n", distanceLeft);
 		printf("Distance from right sensor: %lf \n", distanceRight);
 		printf("Distance from center sensor: %lf \n\n", distanceCenter);
 
 
+		// Counting number of time distance is less than (baseline - noise)
+		if (distanceLeft < (leftBaseline - leftNoise)) {
+			leftCounter++;
+		}
+		else {
+			leftCounter = 0;
+		}
+		if (distanceRight < (rightBaseline - rightNoise)) {
+			rightCounter++;
+		}
+		else {
+			rightCounter = 0;
+		}
+		if (distanceCenter < (centerBaseline - centerNoise)) {
+			centerCounter++;
+		}
+		else 
+			centerCounter = 0;
 
-		if(distanceLeft < (leftBaseline - leftNoise)) leftCounter++;
-		else leftCounter = 0;
-		if(distanceRight < (rightBaseline - rightNoise)) rightCounter++;
-		else rightCounter = 0;
-		if(distanceCenter < (centerBaseline - centerNoise)) centerCounter++;
-		else centerCounter = 0;
-
-
+		// If counter is greater than a certain number of samples, then person detected
 		if(leftCounter >= CONSECUTIVE_SAMPLES_LIMIT) {
 
 			fd_detection = open("/home/pi/ECE471-Project/detection.txt", O_WRONLY);
@@ -110,7 +97,6 @@ int main(int argc, char **argv) {
 			usleep(50000);
 
 		}
-
 		if(rightCounter >= CONSECUTIVE_SAMPLES_LIMIT) {
 
 			fd_detection = open("/home/pi/ECE471-Project/detection.txt", O_WRONLY);
@@ -122,7 +108,6 @@ int main(int argc, char **argv) {
 			close(fd_detection);
 			usleep(50000);
 		}
-
 		if(centerCounter >= CONSECUTIVE_SAMPLES_LIMIT) {
 
 			fd_detection = open("/home/pi/ECE471-Project/detection.txt", O_WRONLY);\
@@ -134,7 +119,6 @@ int main(int argc, char **argv) {
 			close(fd_detection);
 			usleep(50000);
 		}
-
 		if((leftCounter < CONSECUTIVE_SAMPLES_LIMIT) && (rightCounter < CONSECUTIVE_SAMPLES_LIMIT) && (centerCounter < CONSECUTIVE_SAMPLES_LIMIT)) {
 			
 			fd_detection = open("/home/pi/ECE471-Project/detection.txt", O_WRONLY);\
@@ -156,6 +140,7 @@ int main(int argc, char **argv) {
 	return 0;
 }
 
+// Run ultrasonic sensors and calculate distance output from MCP3008 ADC
 double getDistance(int channel){
 
         int spi_fd;
@@ -244,6 +229,7 @@ double getDistance(int channel){
 	return ri;
 }
 
+// Get the average initial distance reading from the ultrasonic sensors
 void getBaseline() {
 
 	double distanceLeft, distanceRight, distanceCenter;
@@ -271,12 +257,14 @@ void getBaseline() {
 	
 }
 
+// Get average noise for each ultrasonic sensor
 void getNoise() {
 	
 	double distanceLeft, distanceRight, distanceCenter;
 	double leftTotal, rightTotal, centerTotal;
 	int i;	
 
+	// Sum distances for left, right, and center ultrasonic sensors
 	for(i = 0; i < 100; i++){
 		distanceLeft = getDistance(0);
 		distanceRight = getDistance(1);
@@ -289,6 +277,7 @@ void getNoise() {
 		usleep(50000);
 	}
 
+	// Divide by number of samples to get average noise for each ultrasonic sensor
 	leftNoise = leftTotal / 100.0;
 	printf("Left noise: %lf\n", leftNoise);
 	rightNoise = rightTotal / 100.0;
@@ -297,4 +286,68 @@ void getNoise() {
 	printf("Left noise: %lf\n", centerNoise);
 
 }
+
+// Function to initialize the chaining of the ultrasonic sensors
+void initializeChaining(){
+	
+	int gpio_file = open("/sys/class/gpio/export",O_WRONLY);
+	
+	// Error check
+	if (gpio_file < 0){
+		printf("Error opening GPIO file!");
+		return 0;
+	}
+	
+	// Enable GPIO21
+	write(gpio_file,"21",2);
+	// Close gpio_file
+	close(gpio_file);
+	
+	// Set direction to output
+	gpio_file = open("/sys/class/gpio/gpio21/direction",O_WRONLY);
+	
+	// Error check
+	if (gpio_file < 0){
+		printf("Error setting direction of GPIO 21 file");
+		return 0;
+	}
+
+	// Write output
+	write(gpio_file,"out",3);
+	close(gpio_file);
+
+	// Set GPIO21 high
+	gpio_file = open("/sys/class/gpio/gpio21/value",O_WRONLY);
+	
+	// Error check
+	if (gpio_file < 0) {
+		printf("Error setting GPIO 21 high");
+		return 0;
+	}
+	
+	// Write "1" to set GPIO21 high
+	write(gpio_file,"1",1);
+	close(gpio_file);
+
+	// This delay accounts for the time constant of the input RC circuit. T = 500 us, so 5T = 2.5 ms.
+	// This delay must be greater than 2.5 ms to charge RX pin to full voltage. T = tau.
+	usleep(5000);
+
+	// Set GPIO21 low
+	gpio_file = open("/sys/class/gpio/gpio21/value",O_WRONLY);
+	
+	// Error check
+	if (gpio_file < 0) {
+		printf("Error setting GPIO21 low!");
+		return 0;
+	}
+
+	// Set GPIO21 low
+	write(gpio_file,"0",1);
+	close(gpio_file);
+}
+
+
+
+
 
