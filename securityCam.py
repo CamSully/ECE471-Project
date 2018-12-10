@@ -14,7 +14,7 @@ from flask import Flask, render_template
 
 def takePic():
 
-	pictureLocation = "/home/pi/ECE471-Project/camera/pics/"
+	pictureLocation = "/home/pi/ECE471-Project/webServer/static/"
 
 	fileNum = 0
 	exists = True
@@ -45,62 +45,42 @@ def takePic():
 	return
 
 
-def webServer():
-
-	app = Flask(__name__)
-
-	@app.route('/')
-
-	def index():
-
-		return render_template('index.html')
-
-
-	app.run(debug = True, host = '0.0.0.0')	
-
-	return
-
 def main():
 
 	counter = 0
 
-	print("Starting Web Server...\n")
-
-	# Start the web server
-#	webServer()
-
-	print("Web Server Started\n")
-
-	print("Starting Ultrasonic Sensors\n")
+	print("Starting Ultrasonic Sensors...")
 
 	# Start the ultrasonic sensors
-	call("ultrasonic/distance &", shell = True)
+	call("sudo ultrasonic/distance &", shell = True)
 
-	time.sleep(12)
-
-	print("Ultrasonic Sensors Started\n")
+	time.sleep(23)
 
 	# Indicate baseline and noise set
-	#call(["sudo", "servo/servo", "0"])
-	#time.sleep(0.1)
-	#call(["sudo", "servo/servo", "180"])
-	#time.sleep(0.1)
-	#call(["sudo", "servo/servo", "90"])
+	call(["sudo", "servo/servo", "0"])
+	time.sleep(0.5)
+	call(["sudo", "servo/servo", "180"])
+	time.sleep(0.5)
+	call(["sudo", "servo/servo", "90"])
+
+	detected = open("detection.txt", "w")
+	detected.write("0")
+	detected.close()
+
+	print("SYSTEM READY")
 
 	# Infinite loop to detect a person and take a picture of them
 	while(1):
-
-		print("Opening file!")
+		
 		# Open file containing what sensor detected a person
 		detected = open("detection.txt", "r")
-		print("File open")
+
+		print("No one Detected")
 
 		# Busy loop to wait until someone is detected
 		while(int(detected.read()) == 0):
-			print("No one Detected\n")
 			detected.close()
 			detected = open("detection.txt", "r")
-		print("WHILE LOOP IS DONE!")
 
 		detected.close()
 		detected = open("detection.txt", "r")
@@ -108,7 +88,7 @@ def main():
 		# If the value in the file is left, move camera to left sensor
 		if(int(detected.read()) == 1):
 
-			print("DETECTED LEFT\n")
+			print("DETECTED LEFT")
 			call(["sudo", "servo/servo", "0"])
 
 		detected.close()
@@ -117,7 +97,7 @@ def main():
 		# If the value in the file is center, move camera to center sensor
 		if(int(detected.read()) == 2):
 
-			print("DETECTED CENTER\n")
+			print("DETECTED CENTER")
 			call(["sudo", "servo/servo", "90"])
 
 		detected.close()
@@ -126,8 +106,7 @@ def main():
 		# If the value in the file is right, move camera to right sensor
 		if(int(detected.read()) == 3):
 
-			print("DETECTED RIGHT\n")
-
+			print("DETECTED RIGHT")
 			call(["sudo", "servo/servo", "180"])
 
 		print("Taking Picture...")
@@ -135,8 +114,11 @@ def main():
 
 		# Once camera is in the correct position, take a picture
 		takePic()
-
-		print("Picture Taken\n")
+		time.sleep(1)
+		call("pkill \"python3 webServer/web.py\" -f", shell = True)
+		call("python3 webServer/web.py &", shell = True)
+		
+		print("Picture Taken!\n")
 
 		# Close the file containing what sensor detected a person
 		detected.close()

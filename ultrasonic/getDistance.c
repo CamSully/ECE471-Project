@@ -25,7 +25,9 @@ int main(int argc, char **argv) {
 
 	double distanceLeft, distanceRight, distanceCenter;
 	int fd_detection;
-	int leftCounter, rightCounter, centerCounter;
+	int leftCounter = 0;
+	int rightCounter = 0;
+	int centerCounter = 0;
 	int result;
 		
 	// Delay for LV-EZ0 start-up
@@ -60,9 +62,9 @@ int main(int argc, char **argv) {
 		}
 
 		// Print distances from each sensor
-		printf("Distance from left sensor: %lf \n", distanceLeft);
-		printf("Distance from right sensor: %lf \n", distanceRight);
-		printf("Distance from center sensor: %lf \n\n", distanceCenter);
+		//printf("Distance from left sensor: %lf \n", distanceLeft);
+		//printf("Distance from right sensor: %lf \n", distanceRight);
+		//printf("Distance from center sensor: %lf \n\n", distanceCenter);
 
 
 		// Counting number of time distance is less than (baseline - noise)
@@ -93,6 +95,7 @@ int main(int argc, char **argv) {
 				return 0;
 			}
 			write(fd_detection, "1", 1);
+			printf("LEFT BASELINE: %lf\tLEFT NOISE: %lf\tLEFT VALUE: %lf\tLEFT COUNTER: %d\n", leftBaseline, leftNoise, distanceLeft, leftCounter);
 			close(fd_detection);
 			usleep(50000);
 
@@ -105,6 +108,7 @@ int main(int argc, char **argv) {
 				return 0;
 			}
 			write(fd_detection, "3", 1);
+			printf("RIGHT BASELINE: %lf\tRIGHT NOISE: %lf\tRIGHT VALUE: %lf\tRIGHT COUNTER: %d\n", rightBaseline, rightNoise, distanceRight, rightCounter);
 			close(fd_detection);
 			usleep(50000);
 		}
@@ -116,6 +120,7 @@ int main(int argc, char **argv) {
 				return 0;
 			}
 			write(fd_detection, "2", 1);
+			printf("CENTER BASELINE: %lf\tCENTER NOISE: %lf\tCENTER VALUE: %lf\tCENTER COUNTER: %d\n", centerBaseline, centerNoise, distanceCenter, centerCounter);
 			close(fd_detection);
 			usleep(50000);
 		}
@@ -236,7 +241,7 @@ void getBaseline() {
 	double leftTotal, rightTotal, centerTotal;
 	int i;	
 
-	for(i = 0; i < 100; i++){
+	for(i = 0; i < 200; i++){
 		distanceLeft = getDistance(0);
 		distanceRight = getDistance(1);
 		distanceCenter = getDistance(2);
@@ -248,11 +253,11 @@ void getBaseline() {
 		usleep(50000);
 	}
 
-	leftBaseline = leftTotal / 100.0;
+	leftBaseline = leftTotal / 200.0;
 	printf("Left baseline: %lf\n", leftBaseline);
-	rightBaseline = rightTotal / 100.0;
+	rightBaseline = rightTotal / 200.0;
 	printf("Right baseline: %lf\n", rightBaseline);
-	centerBaseline = centerTotal / 100.0;
+	centerBaseline = centerTotal / 200.0;
 	printf("Center baseline: %lf\n", centerBaseline);
 	
 }
@@ -265,7 +270,7 @@ void getNoise() {
 	int i;	
 
 	// Sum distances for left, right, and center ultrasonic sensors
-	for(i = 0; i < 100; i++){
+	for(i = 0; i < 200; i++){
 		distanceLeft = getDistance(0);
 		distanceRight = getDistance(1);
 		distanceCenter = getDistance(2);
@@ -278,37 +283,37 @@ void getNoise() {
 	}
 
 	// Divide by number of samples to get average noise for each ultrasonic sensor
-	leftNoise = leftTotal / 100.0;
+	leftNoise = leftTotal / 200.0;
 	printf("Left noise: %lf\n", leftNoise);
-	rightNoise = rightTotal / 100.0;
-	printf("Left noise: %lf\n", rightNoise);
-	centerNoise = centerTotal / 100.0;
-	printf("Left noise: %lf\n", centerNoise);
+	rightNoise = rightTotal / 200.0;
+	printf("Right noise: %lf\n", rightNoise);
+	centerNoise = centerTotal / 200.0;
+	printf("Center noise: %lf\n", centerNoise);
 
 }
 
 // Function to initialize the chaining of the ultrasonic sensors
-void initializeChaining(){
+int initializeChaining(){
 	
 	int gpio_file = open("/sys/class/gpio/export",O_WRONLY);
 	
 	// Error check
 	if (gpio_file < 0){
-		printf("Error opening GPIO file!");
+		printf("Error opening GPIO file!\n");
 		return 0;
 	}
 	
-	// Enable GPIO21
-	write(gpio_file,"21",2);
+	// Enable GPIO20
+	write(gpio_file,"20",2);
 	// Close gpio_file
 	close(gpio_file);
 	
 	// Set direction to output
-	gpio_file = open("/sys/class/gpio/gpio21/direction",O_WRONLY);
+	gpio_file = open("/sys/class/gpio/gpio20/direction",O_WRONLY);
 	
 	// Error check
 	if (gpio_file < 0){
-		printf("Error setting direction of GPIO 21 file");
+		printf("Error setting direction of GPIO20 to output!\n");
 		return 0;
 	}
 
@@ -316,35 +321,50 @@ void initializeChaining(){
 	write(gpio_file,"out",3);
 	close(gpio_file);
 
-	// Set GPIO21 high
-	gpio_file = open("/sys/class/gpio/gpio21/value",O_WRONLY);
+	// Set GPIO20 high
+	gpio_file = open("/sys/class/gpio/gpio20/value",O_WRONLY);
 	
 	// Error check
 	if (gpio_file < 0) {
-		printf("Error setting GPIO 21 high");
+		printf("Error setting GPIO 20 high\n");
 		return 0;
 	}
 	
-	// Write "1" to set GPIO21 high
+	// Write "1" to set GPIO20 high
 	write(gpio_file,"1",1);
 	close(gpio_file);
 
 	// This delay accounts for the time constant of the input RC circuit. T = 500 us, so 5T = 2.5 ms.
 	// This delay must be greater than 2.5 ms to charge RX pin to full voltage. T = tau.
-	usleep(5000);
+	usleep(15000);
 
-	// Set GPIO21 low
-	gpio_file = open("/sys/class/gpio/gpio21/value",O_WRONLY);
+	// Set GPIO20 low
+	gpio_file = open("/sys/class/gpio/gpio20/value",O_WRONLY);
 	
 	// Error check
 	if (gpio_file < 0) {
-		printf("Error setting GPIO21 low!");
+		printf("Error setting GPIO20 low!\n");
 		return 0;
 	}
 
-	// Set GPIO21 low
+	// Set GPIO20 low
 	write(gpio_file,"0",1);
 	close(gpio_file);
+
+
+	// Set direction to input for high impedance
+	gpio_file = open("/sys/class/gpio/gpio20/direction", O_WRONLY);
+
+	// Error Check
+	if (gpio_file < 0){
+		printf("Error setting direction of GPIO20 to input\n");
+		return 0;
+	}
+
+	// Write input
+	write(gpio_file,"in",2);
+	close(gpio_file);
+
 }
 
 
