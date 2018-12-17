@@ -20,4 +20,4 @@ To set up:
 
    - python3 takePic.py
 
-
+Note that the photo "detection.jpg" is the last photo that was taken when a person was detected.

@@ -1,6 +1,0 @@
-Hello mine dudes :)
-
-1) Detect motion with ultra-sonic sensor
-2) Rasp-pi takes photo
-3) uploads to webpage
-3a) maybe even get video to work

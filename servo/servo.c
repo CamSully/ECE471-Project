@@ -22,18 +22,8 @@ int main(int argc, char **argv) {
 	}
 
 	int angle = atoi(argv[1]);
-	printf("Angle: %d\n", angle);
 	rotateServo(angle);
-
-// This loop is for testing code! Replace when finalized.
-/* while (1) {
-	rotateServo(0);
-	sleep(1);
-	rotateServo(90);
-	sleep(1);
-	rotateServo(180);
-	sleep(1);
-} */
+	
 	return 0;
 }
 
@@ -73,7 +63,7 @@ int rotateServo(int angle) {
 
 	char* pulseWidth;
 
-	// Calibrate these values!
+	// Note that these pulse width values are different from the datasheet because they have been manually tuned to rotate to exactly 0, 90, and 180 degrees. 
 	if (angle == 0) {
 		pulseWidth = "2220000"; 
 	}
@@ -95,7 +85,7 @@ int rotateServo(int angle) {
 	printf("Enable write status: %d\n", pwm_file);
 	close(pwm_file);
 	
-	// Do I need this???
+	// Small delay to between writing to different files.
 	usleep(10000);
 
 	// Set the duty cycle (pulse width in nanoseconds) of the PWM signal.
@@ -114,7 +104,7 @@ int rotateServo(int angle) {
 	printf("Duty cycle write status: %d\n", pwm_file);
 	close(pwm_file);
 
-	// Do I need this???
+	// Small delay to between writing to different files.
 	usleep(10000);	
 
 	// Enable the PWM0 interface with the new duty cycle value.

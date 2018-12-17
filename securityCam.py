@@ -5,6 +5,8 @@
 #		     Then turn a camera using a servo motor and take a picture.
 #
 
+# THIS IS THE MAIN CODE FOR THE PROJECT. RUNNING THIS PYTHON SCRIPT RUNS THE SECURITY SYSTEM.
+
 from picamera import PiCamera
 import time
 from subprocess import call
@@ -37,8 +39,8 @@ def takePic():
 	camera = PiCamera()
 	camera.vflip = True
 	camera.start_preview()						# Turn on Camera and preview
-	time.sleep(1)							# Wait 5 seconds to focus
-	camera.capture(pictureLocation + detectionPicture)	# Where to save pics
+	time.sleep(1)							# Wait 1 second to focus
+	camera.capture(pictureLocation + detectionPicture)		# Where to save pics
 	camera.stop_preview()						# Stop the preview
 	camera.close()
 
@@ -54,15 +56,17 @@ def main():
 	# Start the ultrasonic sensors
 	call("sudo ultrasonic/distance &", shell = True)
 
+	# Wait 23 seconds to allow sensors to initialize, get baseline distance, and get noise.
 	time.sleep(23)
 
-	# Indicate baseline and noise set
+	# Indicate that baseline and noise are set by rotating the servo.
 	call(["sudo", "servo/servo", "0"])
 	time.sleep(0.5)
 	call(["sudo", "servo/servo", "180"])
 	time.sleep(0.5)
 	call(["sudo", "servo/servo", "90"])
 
+	# Detection.txt is the file used to indicate whether a person is detected. This file is written by getDistance.c
 	detected = open("detection.txt", "w")
 	detected.write("0")
 	detected.close()
@@ -115,6 +119,7 @@ def main():
 		# Once camera is in the correct position, take a picture
 		takePic()
 		time.sleep(1)
+		# Kill the web server then run it again to display the photo.
 		call("pkill \"python3 webServer/web.py\" -f", shell = True)
 		call("python3 webServer/web.py &", shell = True)
 		

@@ -1,3 +1,9 @@
+/* ECE 471 - Derek H, Dustin K, Cam S - Final Project Code - getDistance.c
+* This file contains the code to get ultrasonic distance measurements.
+* This file contains the algorithm to detect a person based on distance measurements.
+* The detection algorithm finds a baseline distance, finds noise in the ultrasonic measurements, and detects a person based on some math.
+*/
+
 #include <stdio.h>
 
 #include <stdlib.h>
@@ -215,16 +221,7 @@ double getDistance(int channel){
 	// Vi is volts per inch
 	// Vi = Vcc(V)/512(inch)
 	vi = 5.0 / 512.0;
-/*	if (channel == 0) {
-		printf("Left voltage: %lf\n", vm);
-	}
-	if (channel == 1) {
-		printf("Right voltage; %lf\n", vm);
-	}
-	if (channel == 2) {
-		printf("Center voltage; %lf\n", vm);
-	}
-*/
+	
 	// Ri is range in inches
 	ri = vm / vi;
 
@@ -366,8 +363,3 @@ int initializeChaining(){
 	close(gpio_file);
 
 }
-
-
-
-
-
