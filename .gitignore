@@ -11,3 +11,5 @@
 !*.html
 !*.png
 !*.jpg
+!*.pdf
+!*.MOV
